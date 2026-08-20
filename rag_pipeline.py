@@ -7,6 +7,7 @@ geri kalanı ondan bağımsız test edilebilir yardımcı fonksiyonlardır.
 from __future__ import annotations
 
 import hashlib
+import io
 import os
 
 import faiss
@@ -94,10 +95,15 @@ def _build_index(chunks: list[dict]) -> "faiss.Index":
 
 def get_or_build_index(pdf_file) -> tuple["faiss.Index", list[dict]]:
     """Aynı PDF içeriği için embedding/indeksleme işlemini her soruda tekrar
-    etmemek üzere sonucu dosya içeriğinin hash'ine göre önbelleğe alır."""
-    key = hashlib.sha256(_pdf_bytes(pdf_file)).hexdigest()
+    etmemek üzere sonucu dosya içeriğinin hash'ine göre önbelleğe alır.
+
+    Byte'lar tek seferde okunur ve PdfReader'a her zaman taze bir BytesIO
+    verilir — Streamlit'in yüklenen dosya nesnesini iki kez (hash + okuma)
+    tüketirken stream konumunun bozulmasını önlemek için."""
+    data = _pdf_bytes(pdf_file)
+    key = hashlib.sha256(data).hexdigest()
     if key not in _index_cache:
-        chunks = build_chunks(pdf_file)
+        chunks = build_chunks(io.BytesIO(data))
         if not chunks:
             raise ValueError("PDF'ten okunabilir metin çıkarılamadı (taranmış/görüntü tabanlı olabilir).")
         index = _build_index(chunks)
@@ -124,7 +130,7 @@ def _build_llm_client():
         import google.generativeai as genai
 
         genai.configure(api_key=gemini_key)
-        return "gemini", genai.GenerativeModel("gemini-1.5-flash")
+        return "gemini", genai.GenerativeModel("gemini-3.6-flash")
 
     groq_key = os.getenv("GROQ_API_KEY")
     if groq_key:
