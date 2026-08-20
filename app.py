@@ -1,4 +1,5 @@
 import streamlit as st
+from dotenv import load_dotenv
 
 from theme import (
     HERO_ART_SVG,
@@ -8,6 +9,8 @@ from theme import (
     render_section_head,
     render_topnav,
 )
+
+load_dotenv()
 
 st.set_page_config(
     page_title="StudyLens · PDF ile Sohbet",

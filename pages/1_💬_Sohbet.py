@@ -1,9 +1,11 @@
 import streamlit as st
+from dotenv import load_dotenv
 
 from rag_pipeline import answer_question
 from theme import BOT_AVATAR, ICONS, THEME_CSS, USER_AVATAR, render_topnav
 from youtube_search import search_videos
 
+load_dotenv()
 
 st.set_page_config(page_title="StudyLens · Sohbet", page_icon="💬", layout="wide")
 st.markdown(THEME_CSS, unsafe_allow_html=True)
