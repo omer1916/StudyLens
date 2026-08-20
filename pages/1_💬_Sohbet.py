@@ -1,13 +1,8 @@
 import streamlit as st
 
-from mock_backend import answer_question, search_videos
+from rag_pipeline import answer_question
 from theme import BOT_AVATAR, ICONS, THEME_CSS, USER_AVATAR, render_topnav
-
-# NOT: rag_pipeline.py ve youtube_search.py Yağmur tarafından hazırlanıyor.
-# Backend hazır olana kadar arayüz mock_backend.py'deki sahte fonksiyonlarla test edilir.
-# Entegrasyon gününde importlar şu şekilde değiştirilecek:
-# from rag_pipeline import answer_question
-# from youtube_search import search_videos
+from youtube_search import search_videos
 
 
 st.set_page_config(page_title="StudyLens · Sohbet", page_icon="💬", layout="wide")
@@ -118,20 +113,29 @@ if question:
             st.write(question)
 
         with st.chat_message("assistant", avatar=BOT_AVATAR):
-            with st.spinner("Belge inceleniyor..."):
-                result = answer_question(uploaded_pdf, question)
-                st.write(result["answer"])
-                st.markdown(
-                    f'<span class="sl-source-tag">{ICONS["pin"]}Kaynak: sayfa {result["source_page"]}</span>',
-                    unsafe_allow_html=True,
-                )
+            try:
+                with st.spinner("Belge inceleniyor..."):
+                    result = answer_question(uploaded_pdf, question)
+            except (RuntimeError, ValueError) as exc:
+                st.error(str(exc))
+                current_chat["messages"].append({"role": "assistant", "content": f"⚠️ {exc}"})
+                st.stop()
 
-                videos = None
-                if show_videos:
+            st.write(result["answer"])
+            st.markdown(
+                f'<span class="sl-source-tag">{ICONS["pin"]}Kaynak: sayfa {result["source_page"]}</span>',
+                unsafe_allow_html=True,
+            )
+
+            videos = None
+            if show_videos:
+                try:
                     with st.spinner("İlgili videolar aranıyor..."):
                         videos = search_videos(question)
                     for video in videos:
                         render_video_card(video)
+                except RuntimeError as exc:
+                    st.warning(f"İlgili videolar getirilemedi: {exc}")
 
         current_chat["messages"].append(
             {

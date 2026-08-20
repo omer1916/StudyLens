@@ -2,6 +2,7 @@ streamlit
 langchain
 sentence-transformers
 faiss-cpu
+numpy
 pypdf
 pdfplumber
 google-generativeai
